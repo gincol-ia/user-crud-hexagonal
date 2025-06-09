@@ -1,0 +1,66 @@
+services:
+  
+  backend:
+    build:
+      context: .
+    depends_on:
+      - postgres
+    container_name: backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hexdb
+      SPRING_DATASOURCE_USERNAME: hexuser
+      SPRING_DATASOURCE_PASSWORD: hexpass
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    ports:
+      - "8080:8080"
+
+  # PostgreSQL 16 - Última versión estable
+  postgres:
+    image: postgres:17.5-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hexdb
+      POSTGRES_USER: hexuser
+      POSTGRES_PASSWORD: hexpass
+      POSTGRES_INIT_DB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hexuser -d hexdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c work_mem=4MB
+
+  # pgAdmin 4 - Para gestión visual de PostgreSQL
+  pgadmin:
+    image: dpage/pgadmin4:9.4.0
+    container_name: pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com  # ← Cambiar a email válido
+      PGADMIN_DEFAULT_PASSWORD: admin_pass
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  pgadmin_data:
