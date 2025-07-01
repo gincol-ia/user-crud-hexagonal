@@ -21,37 +21,91 @@ public class UserService implements UserServicePort {
     
     @Override
     public User createUser(String username, String email, String firstName, String lastName) {
-        // Validar que no exista un usuario con el mismo username o email
+        validateNewUser(username, email);
+        User user = buildUser(username, email, firstName, lastName);
+        return saveUser(user);
+    }
+    
+    /**
+     * Validates that the username and email are not already in use.
+     * 
+     * @param username The username to validate
+     * @param email The email to validate
+     * @throws IllegalArgumentException if username or email already exists
+     */
+    private void validateNewUser(String username, String email) {
         if (userRepository.existsByUsername(username)) {
             throw new IllegalArgumentException("Username already exists: " + username);
         }
         if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email already exists: " + email);
         }
-        
-        User user = new User(username, email, firstName, lastName);
+    }
+    
+    /**
+     * Creates a new User domain object with the provided information.
+     * 
+     * @param username The username for the new user
+     * @param email The email for the new user
+     * @param firstName The first name of the user
+     * @param lastName The last name of the user
+     * @return A new User instance
+     */
+    private User buildUser(String username, String email, String firstName, String lastName) {
+        return new User(username, email, firstName, lastName);
+    }
+    
+    /**
+     * Persists the user to the repository.
+     * 
+     * @param user The user to save
+     * @return The saved user
+     */
+    private User saveUser(User user) {
         return userRepository.save(user);
     }
     
     @Override
     public User updateUser(UUID id, String username, String email, String firstName, String lastName) {
         User user = getUserById(id);
-        
-        // Validar que no exista otro usuario con el mismo username o email
+        validateUserUpdate(id, username, email);
+        updateUserData(user, username, email, firstName, lastName);
+        return saveUser(user);
+    }
+    
+    /**
+     * Validates that the username and email can be used for updating a user.
+     * 
+     * @param userId The ID of the user being updated
+     * @param username The new username
+     * @param email The new email
+     * @throws IllegalArgumentException if username or email is already used by another user
+     */
+    private void validateUserUpdate(UUID userId, String username, String email) {
         userRepository.findByUsername(username).ifPresent(existingUser -> {
-            if (!existingUser.getId().equals(id)) {
+            if (!existingUser.getId().equals(userId)) {
                 throw new IllegalArgumentException("Username already exists: " + username);
             }
         });
         
         userRepository.findByEmail(email).ifPresent(existingUser -> {
-            if (!existingUser.getId().equals(id)) {
+            if (!existingUser.getId().equals(userId)) {
                 throw new IllegalArgumentException("Email already exists: " + email);
             }
         });
-        
+    }
+    
+    /**
+     * Updates the user data with new values.
+     * 
+     * @param user The user to update
+     * @param username The new username
+     * @param email The new email
+     * @param firstName The new first name
+     * @param lastName The new last name
+     */
+    private void updateUserData(User user, String username, String email, String firstName, String lastName) {
         user.update(username, email, firstName, lastName);
-        return userRepository.save(user);
     }
     
     @Override
