@@ -37,21 +37,40 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ValidationErrorResponse> handleValidationExceptions(
             MethodArgumentNotValidException ex) {
+        Map<String, String> errors = extractValidationErrors(ex);
+        ValidationErrorResponse errorResponse = createValidationErrorResponse(errors);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+    
+    /**
+     * Extracts validation errors from the MethodArgumentNotValidException.
+     * 
+     * @param ex the validation exception containing field errors
+     * @return a map of field names to error messages
+     */
+    private Map<String, String> extractValidationErrors(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        
-        ValidationErrorResponse errorResponse = new ValidationErrorResponse(
+        return errors;
+    }
+    
+    /**
+     * Creates a ValidationErrorResponse with the provided errors.
+     * 
+     * @param errors the validation errors map
+     * @return a fully constructed ValidationErrorResponse
+     */
+    private ValidationErrorResponse createValidationErrorResponse(Map<String, String> errors) {
+        return new ValidationErrorResponse(
             HttpStatus.BAD_REQUEST.value(),
             "Validation failed",
             errors,
             LocalDateTime.now()
         );
-        
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
     
     @ExceptionHandler(Exception.class)
