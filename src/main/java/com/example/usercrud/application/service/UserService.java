@@ -21,15 +21,44 @@ public class UserService implements UserServicePort {
     
     @Override
     public User createUser(String username, String email, String firstName, String lastName) {
-        // Validar que no exista un usuario con el mismo username o email
+        validateUserCreation(username, email);
+        User user = buildNewUser(username, email, firstName, lastName);
+        return saveUser(user);
+    }
+    
+    /**
+     * Validates that username and email are unique before creating a new user
+     * @param username the username to validate
+     * @param email the email to validate
+     * @throws IllegalArgumentException if username or email already exists
+     */
+    private void validateUserCreation(String username, String email) {
         if (userRepository.existsByUsername(username)) {
             throw new IllegalArgumentException("Username already exists: " + username);
         }
         if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email already exists: " + email);
         }
-        
-        User user = new User(username, email, firstName, lastName);
+    }
+    
+    /**
+     * Creates a new User instance with the provided data
+     * @param username the username for the new user
+     * @param email the email for the new user
+     * @param firstName the first name for the new user
+     * @param lastName the last name for the new user
+     * @return a new User instance
+     */
+    private User buildNewUser(String username, String email, String firstName, String lastName) {
+        return new User(username, email, firstName, lastName);
+    }
+    
+    /**
+     * Saves the user to the repository
+     * @param user the user to save
+     * @return the saved user
+     */
+    private User saveUser(User user) {
         return userRepository.save(user);
     }
     
